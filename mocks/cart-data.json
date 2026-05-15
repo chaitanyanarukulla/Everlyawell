@@ -1,0 +1,99 @@
+{
+  "products": [
+    {
+      "sku": "EW-STI-001",
+      "name": "Sexual Health Test",
+      "unitPrice": 149.00,
+      "category": "sexual-health"
+    },
+    {
+      "sku": "EW-THY-002",
+      "name": "Thyroid Test",
+      "unitPrice": 99.00,
+      "category": "thyroid"
+    },
+    {
+      "sku": "EW-VIT-003",
+      "name": "Vitamin D & Inflammation Test",
+      "unitPrice": 89.00,
+      "category": "vitamins"
+    }
+  ],
+  "carts": {
+    "belowThreshold": {
+      "cartId": "cart-001",
+      "items": [{ "sku": "EW-STI-001", "quantity": 4, "unitPrice": 149.00 }],
+      "subtotal": 596.00,
+      "discountApplied": 0,
+      "discountLabel": "",
+      "discountSource": "none",
+      "promoNotBest": false,
+      "total": 596.00
+    },
+    "atThreshold": {
+      "cartId": "cart-002",
+      "items": [{ "sku": "EW-STI-001", "quantity": 5, "unitPrice": 149.00 }],
+      "subtotal": 745.00,
+      "discountApplied": 149.00,
+      "discountLabel": "Buy 5 Get 1 Free",
+      "discountSource": "volume",
+      "promoNotBest": false,
+      "total": 596.00
+    },
+    "doubleThreshold": {
+      "cartId": "cart-003",
+      "items": [{ "sku": "EW-STI-001", "quantity": 10, "unitPrice": 149.00 }],
+      "subtotal": 1490.00,
+      "discountApplied": 298.00,
+      "discountLabel": "Buy 10 Get 2 Free",
+      "discountSource": "volume",
+      "promoNotBest": false,
+      "total": 1192.00
+    },
+    "mixedSkus": {
+      "cartId": "cart-004",
+      "items": [
+        { "sku": "EW-STI-001", "quantity": 3, "unitPrice": 149.00 },
+        { "sku": "EW-THY-002", "quantity": 2, "unitPrice": 99.00 }
+      ],
+      "subtotal": 645.00,
+      "discountApplied": 0,
+      "discountLabel": "",
+      "discountSource": "none",
+      "promoNotBest": false,
+      "total": 645.00
+    },
+    "withPromoCode": {
+      "cartId": "cart-005",
+      "items": [{ "sku": "EW-STI-001", "quantity": 5, "unitPrice": 149.00 }],
+      "subtotal": 745.00,
+      "promoCode": "SAVE200",
+      "promoDiscount": 200.00,
+      "volumeDiscount": 149.00,
+      "discountApplied": 200.00,
+      "discountLabel": "",
+      "discountSource": "promo",
+      "promoNotBest": false,
+      "total": 545.00
+    },
+    "withWeakerPromo": {
+      "cartId": "cart-006",
+      "items": [{ "sku": "EW-STI-001", "quantity": 5, "unitPrice": 149.00 }],
+      "subtotal": 745.00,
+      "promoCode": "SAVE100",
+      "promoDiscount": 100.00,
+      "volumeDiscount": 149.00,
+      "discountApplied": 149.00,
+      "discountLabel": "Buy 5 Get 1 Free",
+      "discountSource": "volume",
+      "promoNotBest": true,
+      "total": 596.00
+    }
+  },
+  "promoCodes": {
+    "SAVE200": { "discount": 200.00, "type": "flat", "active": true },
+    "SAVE100": { "discount": 100.00, "type": "flat", "active": true },
+    "PERCENT10": { "discount": 10, "type": "percentage", "active": true },
+    "EXPIRED99": { "discount": 99.00, "type": "flat", "active": false }
+  }
+}

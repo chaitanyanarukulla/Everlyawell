@@ -1,0 +1,18 @@
+{
+  "name": "everlywell-ai-first-qa-project",
+  "version": "1.0.0",
+  "description": "Everlywell Volume Discount QA Take-Home — Senior AI-First QA Engineer Submission",
+  "scripts": {
+    "test": "playwright test",
+    "test:unit": "playwright test tests/checkout-volume-discount.spec.ts",
+    "test:promo": "playwright test tests/promo-conflict.spec.ts",
+    "test:edge": "playwright test tests/edge-cases.spec.ts",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

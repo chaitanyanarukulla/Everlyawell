@@ -1,0 +1,39 @@
+{
+  "_comment": "Admin-maintained discount configuration. Engineering changes not required — update this file only.",
+  "version": "1.2.0",
+  "lastUpdatedBy": "admin@everlywell.com",
+  "lastUpdatedAt": "2024-05-01T00:00:00Z",
+  "volumeDiscounts": [
+    {
+      "id": "volume-5",
+      "label": "Buy 5 Get 1 Free",
+      "minQuantity": 5,
+      "freeItemCount": 1,
+      "scope": "per-sku",
+      "active": true,
+      "description": "When a customer adds 5 or more of the same SKU, 1 item is discounted at 100%"
+    },
+    {
+      "id": "volume-10",
+      "label": "Buy 10 Get 2 Free",
+      "minQuantity": 10,
+      "freeItemCount": 2,
+      "scope": "per-sku",
+      "active": true,
+      "description": "When a customer adds 10 or more of the same SKU, 2 items are discounted at 100%"
+    }
+  ],
+  "rules": {
+    "discountMutualExclusivity": true,
+    "applyHighestDiscount": true,
+    "discountAppliedBeforeTax": true,
+    "shippingExcluded": true,
+    "stackingAllowed": false
+  },
+  "taxRate": 0.0875,
+  "shipping": {
+    "flatRate": 9.99,
+    "freeShippingThreshold": 150.00,
+    "discountable": false
+  }
+}

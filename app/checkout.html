@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Everlywell Checkout</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+    [data-testid="discount-badge"] { background: #e6f4ea; color: #2d7a3a; padding: 4px 10px; border-radius: 4px; margin-bottom: 8px; display: none; }
+    [data-testid="promo-error"] { color: #c0392b; margin-top: 6px; display: none; }
+    [data-testid="promo-not-best-message"] { color: #7d6608; margin-top: 6px; display: none; }
+    [data-testid="discount-source"] { color: #555; font-size: 0.9em; display: none; }
+    [data-testid="volume-discount-line"] { color: #2d7a3a; font-size: 0.9em; display: none; }
+    .row { display: flex; justify-content: space-between; margin: 6px 0; }
+    .total-row { font-weight: bold; border-top: 1px solid #ccc; padding-top: 8px; margin-top: 8px; }
+    input { padding: 6px 10px; width: 180px; }
+    button { padding: 6px 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Checkout</h1>
+
+  <!-- Discount status -->
+  <div data-testid="discount-badge">
+    <span data-testid="discount-label"></span>
+  </div>
+  <div data-testid="discount-source"></div>
+  <div data-testid="volume-discount-line">Volume Discount Applied</div>
+
+  <!-- Line items -->
+  <div class="row">
+    <span>Discount</span>
+    <span data-testid="discount-amount">$0.00</span>
+  </div>
+  <div class="row total-row">
+    <span>Order Total</span>
+    <span data-testid="order-total">$0.00</span>
+  </div>
+
+  <!-- Promo code -->
+  <div style="margin-top:24px">
+    <input data-testid="promo-input" type="text" placeholder="Enter promo code" />
+    <button data-testid="promo-apply-btn">Apply</button>
+    <div data-testid="promo-error"></div>
+    <div data-testid="promo-not-best-message">
+      A better discount has been automatically applied.
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+    function fmt(n) {
+      return '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function show(sel) { document.querySelector(sel).style.display = 'block'; }
+    function hide(sel) { document.querySelector(sel).style.display = 'none'; }
+    function text(sel, val) { document.querySelector(sel).textContent = val; }
+
+    // -----------------------------------------------------------------------
+    // Render cart state into DOM
+    // -----------------------------------------------------------------------
+    function renderCart(cart) {
+      const disc   = cart.discountApplied || 0;
+      const total  = cart.total || 0;
+      const source = cart.discountSource || 'none';
+      const label  = cart.discountLabel  || '';
+      const promo  = cart.promoCode      || '';
+
+      // Discount amount
+      text('[data-testid="discount-amount"]', disc > 0 ? '-' + fmt(disc) : '$0.00');
+
+      // Order total
+      text('[data-testid="order-total"]', fmt(total));
+
+      // Badge + label
+      if (disc > 0 && label) {
+        text('[data-testid="discount-label"]', label);
+        show('[data-testid="discount-badge"]');
+      } else {
+        hide('[data-testid="discount-badge"]');
+      }
+
+      // Discount source line
+      if (source === 'promo' && promo) {
+        text('[data-testid="discount-source"]', 'Promo Code: ' + promo);
+        show('[data-testid="discount-source"]');
+        hide('[data-testid="volume-discount-line"]');
+      } else if (source === 'volume' && disc > 0) {
+        text('[data-testid="discount-source"]', 'Volume Discount');
+        show('[data-testid="discount-source"]');
+        show('[data-testid="volume-discount-line"]');
+      } else {
+        hide('[data-testid="discount-source"]');
+        hide('[data-testid="volume-discount-line"]');
+      }
+
+      // Promo-not-best message
+      if (cart.promoNotBest) {
+        show('[data-testid="promo-not-best-message"]');
+      } else {
+        hide('[data-testid="promo-not-best-message"]');
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Fetch cart from (Playwright-intercepted) API
+    // -----------------------------------------------------------------------
+    async function fetchCart() {
+      try {
+        const res = await fetch('/api/checkout/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        if (res.ok) renderCart(await res.json());
+      } catch (e) {
+        console.error('fetchCart error:', e);
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Promo code apply — validate first, then recalculate
+    // -----------------------------------------------------------------------
+    let appliedPromo = '';
+
+    async function applyPromo() {
+      const code = document.querySelector('[data-testid="promo-input"]').value.trim();
+      const errEl = document.querySelector('[data-testid="promo-error"]');
+
+      errEl.style.display = 'none';
+      errEl.textContent   = '';
+
+      if (!code) return;
+      if (code === appliedPromo) return; // idempotent: ignore duplicate apply
+
+      try {
+        const res = await fetch('/api/promo/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          errEl.textContent   = err.message || 'Promo code not found or expired.';
+          errEl.style.display = 'block';
+          return; // Do not recalculate — existing discount preserved
+        }
+
+        appliedPromo = code;
+        await fetchCart(); // checkout API already resolves best discount
+      } catch (e) {
+        errEl.textContent   = 'Error validating promo code.';
+        errEl.style.display = 'block';
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Event wiring
+    // -----------------------------------------------------------------------
+    document.querySelector('[data-testid="promo-apply-btn"]')
+      .addEventListener('click', applyPromo);
+
+    window.addEventListener('cart:update', fetchCart);
+
+    // Initial hydration
+    fetchCart();
+  </script>
+</body>
+</html>
