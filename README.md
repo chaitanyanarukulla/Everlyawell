@@ -74,7 +74,7 @@ npm run test:report
         ├─────────────────┤
         │  Integration (3)│  ← Playwright route mocking: API contract validation
         ├─────────────────┤
-        │   Unit (4+)     │  ← Pure TS: rounding, discount selection, SKU logic
+        │   Unit (8)      │  ← Pure TS: rounding, discount selection, SKU logic
         └─────────────────┘
 ```
 
@@ -111,4 +111,4 @@ Full test plan: [`test-plan.md`](./test-plan.md)
 ---
 
 *Full technical tradeoffs: [`assumptions-and-tradeoffs.md`](./assumptions-and-tradeoffs.md)*  
-* Prompt used to generate: [`.md`](./Prompt.md)*
+* Prompt used to generate: [`Prompt.md`](./Prompt.md)*
