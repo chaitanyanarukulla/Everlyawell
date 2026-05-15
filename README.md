@@ -34,13 +34,20 @@ Full rationale for each assumption is documented in [`assumptions-and-tradeoffs.
 ## Setup Instructions
 
 ### Prerequisites
+- Git
 - Node.js ≥ 18.x
 - npm ≥ 9.x
+
+### Get the Project
+
+```bash
+git clone https://github.com/chaitanyanarukulla/Everlyawell.git
+cd Everlyawell
+```
 
 ### Install
 
 ```bash
-cd everlywell-ai-first-qa-project
 npm install
 npx playwright install chromium
 ```
