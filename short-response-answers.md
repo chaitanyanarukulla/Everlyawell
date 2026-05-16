@@ -17,15 +17,23 @@ The main tools I used were [ChatGPT](https://chatgpt.com?utm_source=chatgpt.com)
 * improving code readability,
 * and identifying potential edge cases.
 
-I wrote the core solution logic, data modeling decisions, validation strategy, and final refactoring myself. I also reviewed all AI-generated code before integrating it to ensure correctness, maintainability, and alignment with the project requirements.
+I worked on the implementation design, data modeling decisions, validation strategy, and final refactoring myself. I also reviewed all AI-generated code before integrating it to ensure correctness, maintainability, and alignment with the project requirements.
 
 One example where I had to correct the AI’s output was during aggregation and validation logic for semi-structured input data. The AI initially generated a solution that assumed all records contained valid numeric fields and required keys. In practice, the dataset could contain malformed or incomplete entries, which would have caused runtime exceptions and inaccurate summaries. I modified the implementation to defensively handle missing fields, validate data types, skip invalid records safely, and normalize inconsistent input values. I also simplified portions of the generated code to improve readability and reduce unnecessary complexity.
 
 Overall, I used AI as a productivity and collaboration tool rather than as a replacement for engineering judgment. My focus was on leveraging AI to speed up iteration while ensuring the final implementation remained reliable, testable, and production-quality.
 
-# 2.Create an automated test suite for the most critical or risk-prone functionality related to this feature.
+# 2. Create an automated test suite for the most critical or risk-prone functionality related to this feature.
 
-[`tests/volumetric.spec.ts`](./tests/volumetric.spec.ts) |
+The automated test suite is organized across three spec files, each targeting a distinct risk area:
+
+- [`tests/checkout-volume-discount.spec.ts`](./tests/checkout-volume-discount.spec.ts) — Core volume discount calculations (TC-01 through TC-06)
+- [`tests/promo-conflict.spec.ts`](./tests/promo-conflict.spec.ts) — Promo code vs. volume discount conflict resolution (TC-07 through TC-11)
+- [`tests/edge-cases.spec.ts`](./tests/edge-cases.spec.ts) — Boundary values, async behavior, and unit-level pricing validation (EC-01 through EC-07)
+
+Shared test utilities are in [`tests/test-helpers.ts`](./tests/test-helpers.ts). Business logic under test lives in [`utils/discount-helper.ts`](./utils/discount-helper.ts) and [`utils/pricing-calculator.ts`](./utils/pricing-calculator.ts).
+
+The API contract used by all tests is documented in [`api-contract.md`](./api-contract.md).
 
 
 # 3a. Testing Approach Across the Development Lifecycle

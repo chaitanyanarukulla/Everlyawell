@@ -117,6 +117,7 @@ Short-response answers: [`short-response-answers.md`](./short-response-answers.m
 | [`test-plan.md`](./test-plan.md) | Risk-based test plan, regression scope, observability recommendations |
 | [`assumptions-and-tradeoffs.md`](./assumptions-and-tradeoffs.md) | Technical decisions, assumptions rationale, and intentional omissions |
 | [`short-response-answers.md`](./short-response-answers.md) | Responses to interview questions (3a–3d) |
+| [`api-contract.md`](./api-contract.md) | API endpoint schemas, request/response contracts, error handling |
 | [`Prompt.md`](./Prompt.md) | Original project prompt / requirements reference |
 
 ---
@@ -135,5 +136,6 @@ Short-response answers: [`short-response-answers.md`](./short-response-answers.m
 
 *Full technical tradeoffs: [`assumptions-and-tradeoffs.md`](./assumptions-and-tradeoffs.md)*  
 *Product requirements: [`PRD.md`](./PRD.md)*  
+*API contract: [`api-contract.md`](./api-contract.md)*  
 *Interview responses: [`short-response-answers.md`](./short-response-answers.md)*  
 *Prompt used to generate: [`Prompt.md`](./Prompt.md)*
