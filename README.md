@@ -10,7 +10,9 @@
 
 This project validates the business-critical checkout pricing logic introduced by the volume discount feature. 
 The core risk is financial accuracy: an incorrect discount calculation directly impacts revenue and customer trust. 
-This submission prioritizes that risk above all else..
+This submission prioritizes that risk above all else.
+
+The full product requirements, including functional specifications, discount qualification rules, and admin configuration design, are documented in [`PRD.md`](./PRD.md).
 
 ---
 
@@ -92,7 +94,8 @@ npm run test:report
 3. **Async recalculation stability** — race conditions cause displayed total to diverge from charged total.
 4. **Edge cases** — rounding errors, stale cart state, rapid input — addressed with targeted tests and unit coverage.
 
-Full test plan: [`test-plan.md`](./test-plan.md)
+Full test plan: [`test-plan.md`](./test-plan.md)  
+Short-response answers: [`short-response-answers.md`](./short-response-answers.md)
 
 ---
 
@@ -102,6 +105,19 @@ Full test plan: [`test-plan.md`](./test-plan.md)
 - **Antigravity (Claude Sonnet)** — primary code generation and documentation drafting
 - **GitHub Copilot** — inline autocomplete during utility function development
 - **ChatGPt (Gpt4.5)** — for generating PRD 
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`README.md`](./README.md) | Project overview, setup, and test strategy |
+| [`PRD.md`](./PRD.md) | Product requirements — functional specs, discount rules, admin config design |
+| [`test-plan.md`](./test-plan.md) | Risk-based test plan, regression scope, observability recommendations |
+| [`assumptions-and-tradeoffs.md`](./assumptions-and-tradeoffs.md) | Technical decisions, assumptions rationale, and intentional omissions |
+| [`short-response-answers.md`](./short-response-answers.md) | Responses to interview questions (3a–3d) |
+| [`Prompt.md`](./Prompt.md) | Original project prompt / requirements reference |
 
 ---
 
@@ -118,4 +134,6 @@ Full test plan: [`test-plan.md`](./test-plan.md)
 ---
 
 *Full technical tradeoffs: [`assumptions-and-tradeoffs.md`](./assumptions-and-tradeoffs.md)*  
-* Prompt used to generate: [`Prompt.md`](./Prompt.md)*
+*Product requirements: [`PRD.md`](./PRD.md)*  
+*Interview responses: [`short-response-answers.md`](./short-response-answers.md)*  
+*Prompt used to generate: [`Prompt.md`](./Prompt.md)*
