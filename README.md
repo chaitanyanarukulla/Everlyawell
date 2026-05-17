@@ -102,9 +102,10 @@ Short-response answers: [`short-response-answers.md`](./short-response-answers.m
 ## AI Usage
 
 ### Tools Used
+- **TestWare** *(personal tool, self-developed)* — used to analyze product requirements, derive the risk-based test strategy, and generate structured test cases from the PRD. TestWare is a QA-focused platform I've been building and refining over several years to accelerate requirements-to-test-case workflows.
 - **Antigravity (Claude Sonnet)** — primary code generation and documentation drafting
 - **GitHub Copilot** — inline autocomplete during utility function development
-- **ChatGPt (Gpt4.5)** — for generating PRD 
+- **ChatGPT (GPT-4.5)** — for generating PRD
 
 ---
 
