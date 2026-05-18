@@ -3,25 +3,45 @@
 **Submitted by:** Chai Narukulla  
 **Feature:** Volume-Based Checkout Discount
 
-# 1. Use AI coding tools to assist in different aspects of this project. Include a brief note on which tools you
-used, what you delegated vs. wrote yourself, and one example where you had to correct or override
-the AI's output.
+---
 
-For this project, I used AI-assisted development tools primarily to accelerate implementation, improve code quality, and validate edge cases while still maintaining full ownership of the architecture and final decisions.
+# 1. Use AI coding tools to assist in different aspects of this project. Include a brief note on which tools you used, what you delegated vs. wrote yourself, and one example where you had to correct or override the AI's output.
 
-The main tools I used were [ChatGPT](https://chatgpt.com?utm_source=chatgpt.com) and [GitHub Copilot](https://github.com/features/copilot?utm_source=chatgpt.com). I delegated repetitive or low-level tasks to AI, such as:
+### Tools Used
 
-* generating boilerplate functions,
-* suggesting data transformation patterns,
-* drafting unit test cases,
-* improving code readability,
-* and identifying potential edge cases.
+| Tool | Role |
+|------|------|
+| **TestWare** *(self-developed)* | Requirements analysis → structured test case derivation from the PRD |
+| **Antigravity (Claude Sonnet)** | Primary code generation: test specs, helper utilities, documentation drafts |
+| **GitHub Copilot** | Inline autocomplete during `discount-helper.ts` and `pricing-calculator.ts` development |
+| **ChatGPT (GPT-4.5)** | PRD generation and structured requirement decomposition |
 
-I worked on the implementation design, data modeling decisions, validation strategy, and final refactoring myself. I also reviewed all AI-generated code before integrating it to ensure correctness, maintainability, and alignment with the project requirements.
+### What I Delegated vs. Owned
 
-One example where I had to correct the AI’s output was during aggregation and validation logic for semi-structured input data. The AI initially generated a solution that assumed all records contained valid numeric fields and required keys. In practice, the dataset could contain malformed or incomplete entries, which would have caused runtime exceptions and inaccurate summaries. I modified the implementation to defensively handle missing fields, validate data types, skip invalid records safely, and normalize inconsistent input values. I also simplified portions of the generated code to improve readability and reduce unnecessary complexity.
+**Delegated to AI:** boilerplate test structure, initial mock data shapes, first-pass documentation drafts, and `roundCurrency()` implementation.
 
-Overall, I used AI as a productivity and collaboration tool rather than as a replacement for engineering judgment. My focus was on leveraging AI to speed up iteration while ensuring the final implementation remained reliable, testable, and production-quality.
+**Owned entirely:** risk-based test prioritization (deciding *which* tests to write and *why*), the `selectBestDiscount()` tie-breaking rule (promo wins on tie — a UX judgment call, not a code generation task), the flaky-test mitigation strategy (`expect.poll()` over `waitForTimeout`), and the decision to keep the suite at 18 tests rather than over-engineering coverage.
+
+### Correction Example
+
+AI initially generated synchronous assertions for checkout total verification:
+
+```typescript
+// AI-generated — breaks on async recalculation
+await expect(page.locator('[data-testid="order-total"]')).toHaveText('$596.00');
+```
+
+This fails intermittently because checkout recalculation is asynchronous — the DOM hasn't updated yet when the assertion fires. I replaced these with polling-based assertions:
+
+```typescript
+// Corrected — tolerates async recalculation latency
+await expect.poll(
+  () => page.locator('[data-testid="order-total"]').textContent(),
+  { timeout: 5000 }
+).toBe('$596.00');
+```
+
+This change was applied across every test that asserts on API-derived values. It eliminated an entire class of timing-based flakiness and better models how checkout recalculation actually behaves in production.
 
 # 2. Create an automated test suite for the most critical or risk-prone functionality related to this feature.
 
@@ -40,25 +60,17 @@ The API contract used by all tests is documented in [`api-contract.md`](./api-co
 
 ## Early Development — Shift-Left Collaboration
 
-My involvement begins before implementation starts. For this project, I intentionally spent a significant portion of my time upfront understanding the business problem, identifying ambiguity in the requirements, and clarifying assumptions before building automation.
+My involvement begins before implementation starts. For this feature, I spent the first phase identifying ambiguity in the UAC that would directly affect pricing behavior — not building automation.
 
-During the discovery phase, I identified several areas that could significantly impact pricing behavior, customer experience, and downstream implementation decisions. I reached out to the team for clarification while also documenting the assumptions I would make where ambiguity intentionally remained.
+Three questions determined the shape of the entire test strategy:
 
-Some of the key questions included:
-- What qualifies as the “same product” — identical SKU, product family, or category?
-- How should ties be handled when a promo code and volume discount produce equal savings?
-- How should the “free” item be calculated — qualifying SKU price, lowest-priced item, or another pricing rule?
+1. **What qualifies as "the same product"?** — SKU, product family, or category? This changes whether a cart with 3 Food Sensitivity kits + 2 STI kits qualifies. I chose SKU-level (most conservative, lowest revenue-leakage risk).
+2. **What happens on a tie?** — When promo and volume discounts produce equal savings, who wins? The UAC is silent. I chose promo (honors deliberate customer action — better UX).
+3. **How is the "free" item priced?** — Qualifying SKU price, lowest-priced item, or average? This directly changes the discount amount. I chose qualifying SKU price (most intuitive).
 
-These decisions directly influence:
-- discount eligibility
-- pricing calculations
-- edge-case behavior
-- checkout consistency
-- customer expectations
+Each of these decisions has a direct financial impact. Rather than letting implementation assumptions define behavior implicitly, I documented each one in [`assumptions-and-tradeoffs.md`](./assumptions-and-tradeoffs.md) and wrote concrete ATDD-style scenarios that serve as a shared contract between Product, Engineering, and QA.
 
-In a production environment, unclear pricing behavior creates a high risk of revenue-impacting defects and inconsistent customer experiences. Rather than allowing implementation assumptions to define behavior implicitly, I prefer aligning Product, Engineering, and QA early through concrete examples and lightweight ATDD-style scenarios.
-
-This creates a shared contract between teams before implementation begins and significantly reduces downstream rework.
+This approach catches requirement defects before they become code defects — which is where shift-left testing delivers the highest ROI.
 
 ---
 
@@ -143,36 +155,31 @@ This helps the team quickly detect unexpected production behavior after release.
 
 ### During Development
 
-If a test fails against the UAC during development, my first step is determining whether the issue is:
-- a true implementation defect
-- an undefined business rule
-- or a requirement ambiguity
+If a test fails against the UAC during development, my first step is classifying the root cause:
 
-For pricing systems specifically, many “bugs” originate from unclear business behavior rather than incorrect engineering implementation.
+| Classification | Action | Example from this project |
+|---|---|---|
+| Implementation defect | File bug, block merge | `selectBestDiscount()` applies volume when promo is higher |
+| Undefined business rule | Escalate to Product with concrete scenario | "What happens at qty=6? Is it 1 free item or 1.2?" |
+| Requirement ambiguity | Document assumption, write test, get sign-off | Tie-breaking rule (promo wins on equal savings) |
 
-In these cases, I bring Product and Engineering together with:
-- a reproducible scenario
-- concrete pricing examples
-- expected vs actual behavior
-- customer impact analysis
+For checkout pricing, many apparent "bugs" are actually undefined business rules. The cost of misclassification is high — treating an ambiguity as a defect wastes engineering time; treating a real defect as an ambiguity lets it ship.
 
-Once alignment is reached, I update both the automated coverage and the documented assumptions to ensure future consistency.
+I bring Product and Engineering together with a concrete pricing scenario showing expected vs. actual behavior and customer impact — not just a failing test ID.
 
 ---
 
 ### During QA / Staging
 
-At the staging phase, UAC failures are treated as production-risk defects.
+At the staging phase, UAC failures are treated as production-risk defects. I document:
 
-I document:
-- reproduction steps
-- expected vs actual behavior
-- screenshots/traces
-- impacted user flows
-- severity classification
-- business impact
+- **Reproduction steps** with exact cart configuration and quantities
+- **Expected vs. actual** pricing breakdown (subtotal, discount, total)
+- **Playwright trace** attached for deterministic reproduction
+- **Severity classification** — pricing errors are release blockers by default
+- **Business impact** — framed in revenue terms, not just technical terms
 
-Revenue-impacting pricing issues are treated as release blockers due to their direct financial and customer trust implications.
+Revenue-impacting pricing issues are never deferred. A $1 overcharge at scale is a financial and trust liability.
 
 ---
 
@@ -192,70 +199,56 @@ The resulting automated test remains part of the regression suite to prevent rec
 
 # 3b. Significant Risks and Communication Strategy
 
-## Risk 1 — Pricing Calculation Accuracy (Critical)
+## Risk 1 — Pricing Calculation Accuracy (P0 / Critical)
 
-The highest-risk area for this feature is incorrect monetary calculation behavior.
+**What breaks:** Displayed checkout total ≠ charged amount. A customer sees $400, gets charged $500.
 
-Checkout systems are highly sensitive to:
-- floating-point rounding
-- calculation ordering
-- discount precedence
-- tax application timing
-- subtotal recalculation
+**Why it's highest priority:** This is a direct revenue and trust issue. For a health diagnostics company like Everlywell, pricing errors also risk regulatory and compliance scrutiny — customers purchasing medical test kits expect billing accuracy.
 
-Even small inconsistencies between displayed totals and charged totals can create:
-- customer trust issues
-- accounting discrepancies
-- support escalations
-- financial reconciliation problems
+**Root causes:**
+- Floating-point arithmetic (e.g., `0.1 + 0.2 ≠ 0.3` in JavaScript)
+- Discount applied after tax instead of before
+- Rounding applied inconsistently across calculation steps
 
-To reduce this risk, I would recommend:
-- integer-cent calculations instead of floating-point math
-- deterministic rounding rules
-- centralized pricing calculation logic
-- independent validation utilities for expected totals
+**Mitigations implemented:**
+- `roundCurrency()` utility with epsilon-corrected rounding (`EC-01`)
+- Centralized discount selection in `selectBestDiscount()` — single decision point, no fragmentation
+- Unit tests validate calculation correctness independent of UI rendering
 
-I would communicate this early as a P0 business-risk concern due to its direct impact on revenue and payment integrity.
+**How I'd communicate this:** As a P0 business-risk item in sprint planning and release readiness. Framed in financial terms: *"A 1-cent rounding error across 10K daily orders = $100/day systematic revenue discrepancy that compounds in financial reconciliation."*
 
 ---
 
-## Risk 2 — Async Checkout Race Conditions (High)
+## Risk 2 — Async Checkout Race Conditions (P0 / High)
 
-Checkout recalculation is asynchronous, which creates the risk that users could submit orders while pricing is still updating.
+**What breaks:** User clicks "Place Order" while checkout is mid-recalculation. Backend charges $745, but the UI showed $596.
 
-This introduces the possibility of mismatches between:
-- displayed totals
-- backend-calculated totals
-- charged amounts
+**Why it matters:** This is a payment integrity issue. The customer disputes the charge, support escalates, and the company absorbs the cost. At volume, this creates a measurable support cost center.
 
-My recommendation would be:
-- disable checkout submission during recalculation
-- display clear loading states
-- validate recalculation completion before order placement
-- ensure backend pricing remains the source of truth
+**Mitigations implemented:**
+- `EC-05` validates that assertions wait for async recalculation to complete (1.5s simulated latency)
+- `EC-04` validates rapid quantity changes settle to correct final state
+- All UI assertions use `expect.poll()` — never `waitForTimeout()`
 
-The automation suite specifically validates async recalculation behavior using polling-based assertions to better simulate real-world timing conditions and reduce flaky test behavior.
+**Recommendations for production:**
+- Disable the "Place Order" button during recalculation (loading state)
+- Backend validates cart totals server-side before charging — frontend total is advisory only
+- Log discrepancies between frontend-displayed and backend-calculated totals as a monitoring signal
 
 ---
 
-## Risk 3 — Double Discounting / Revenue Leakage (High)
+## Risk 3 — Double Discounting / Revenue Leakage (P1 / High)
 
-The interaction between promo codes and automatic volume discounts introduces another major risk surface.
+**What breaks:** A customer gets both the volume discount ($149 off) *and* a promo code ($200 off) applied simultaneously. Total discount: $349 instead of $200.
 
-If discount-selection logic is fragmented across multiple layers, there is potential for:
-- stacked discounts
-- inconsistent pricing behavior
-- duplicate discount application
-- direct revenue leakage
+**Why it matters:** This is direct, measurable revenue loss. If discount selection logic is fragmented across frontend and backend, stacking becomes possible through edge cases — especially during cart modifications that trigger multiple recalculation events.
 
-To reduce this risk, I would strongly recommend maintaining a single centralized discount-selection decision point shared across checkout flows.
+**Mitigations implemented:**
+- `selectBestDiscount()` is a single, centralized decision function — mutually exclusive by design
+- `TC-07` and `TC-08` validate correct winner selection in both directions
+- `TC-11` validates that duplicate promo submissions don't double-apply
+- Tie-breaking rule is documented and tested (`EC-03`)
 
-I would validate this behavior through:
-- integration-level testing
-- edge-case pricing scenarios
-- simultaneous discount application attempts
-- regression coverage around discount precedence logic
-
-From a communication standpoint, I would frame this not only as a technical concern, but as a measurable business-risk scenario with direct financial implications.
+**How I'd communicate this:** In a pre-launch risk review with Engineering and Finance. Framed as: *"If this logic has a gap, it's not a UX issue — it's a revenue leakage issue that compounds silently until someone notices in monthly reconciliation."*
 
 ---

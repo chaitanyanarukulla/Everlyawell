@@ -1,6 +1,6 @@
 # Everlywell AI-First QA Take-Home — Volume Discount Checkout
 
-**Submitted by:** Chai.Narukulla 
+**Submitted by:** Chai Narukulla  
 **Scope:** Automated validation of volume-based discount logic at checkout  
 **Stack:** Playwright · TypeScript · Node.js · Mocked API responses
 
@@ -8,9 +8,11 @@
 
 ## Project Overview
 
-This project validates the business-critical checkout pricing logic introduced by the volume discount feature. 
-The core risk is financial accuracy: an incorrect discount calculation directly impacts revenue and customer trust. 
-This submission prioritizes that risk above all else.
+**The problem:** Everlywell needs a volume-based discount system at checkout (buy 5 identical kits, get 1 free). The highest-risk surface area is pricing calculation accuracy — an incorrect discount directly impacts revenue, customer trust, and payment integrity.
+
+**My approach:** Rather than building a broad, shallow test suite, I identified the three highest-risk areas (calculation accuracy, discount conflict resolution, and async recalculation) and built layered coverage — unit tests for pricing math, integration tests for API contracts, and E2E tests for checkout behavior — targeting those risks specifically.
+
+**The result:** 18 tests across 3 spec files, with full coverage of every UAC requirement, 6 documented edge cases, and zero reliance on `waitForTimeout` or other flakiness-prone patterns.
 
 The full product requirements, including functional specifications, discount qualification rules, and admin configuration design, are documented in [`PRD.md`](./PRD.md).
 
@@ -79,20 +81,23 @@ npm run test:report
 
 ```
         ┌─────────────────┐
-        │   UI / E2E (7)  │  ← Playwright: async checkout flow, promo UX
+        │   UI / E2E (7)  │  ← Playwright: async checkout flow, promo UX, dynamic recalc
         ├─────────────────┤
-        │  Integration (3)│  ← Playwright route mocking: API contract validation
+        │ Integration (8) │  ← Playwright route mocking: API contract, conflict resolution
         ├─────────────────┤
-        │   Unit (8)      │  ← Pure TS: rounding, discount selection, SKU logic
+        │   Unit (3)      │  ← Pure TS: rounding, discount selection, volume calculation
         └─────────────────┘
 ```
 
 ### Risk-Based Prioritization
 
-1. **Checkout calculation accuracy** — incorrect totals are a P0 issue. Validated first.
-2. **Discount conflict resolution** — wrong discount applied = revenue impact or customer complaints.
-3. **Async recalculation stability** — race conditions cause displayed total to diverge from charged total.
-4. **Edge cases** — rounding errors, stale cart state, rapid input — addressed with targeted tests and unit coverage.
+| Priority | Risk | Tests |
+|----------|------|-------|
+| **P0** | Checkout calculation accuracy — incorrect totals are a revenue defect | TC-02, TC-03, EC-01 |
+| **P0** | Discount conflict resolution — wrong discount applied = revenue loss or customer complaint | TC-07, TC-08, EC-03 |
+| **P1** | Async recalculation stability — race conditions cause display/charge mismatch | EC-04, EC-05 |
+| **P1** | Boundary and state management — stale state, config changes, duplicate submissions | TC-01, TC-04, TC-05, EC-06, EC-07, TC-11 |
+| **P2** | Error handling — invalid/expired promos handled gracefully | TC-09, TC-10 |
 
 Full test plan: [`test-plan.md`](./test-plan.md)  
 Short-response answers: [`short-response-answers.md`](./short-response-answers.md)
@@ -101,11 +106,14 @@ Short-response answers: [`short-response-answers.md`](./short-response-answers.m
 
 ## AI Usage
 
-### Tools Used
-- **TestWare** *(personal tool, self-developed)* — used to analyze product requirements, derive the risk-based test strategy, and generate structured test cases from the PRD. TestWare is a QA-focused platform I've been building and refining over several years to accelerate requirements-to-test-case workflows.
-- **Antigravity (Claude Sonnet)** — primary code generation and documentation drafting
-- **GitHub Copilot** — inline autocomplete during utility function development
-- **ChatGPT (GPT-4.5)** — for generating PRD
+| Tool | Role |
+|------|------|
+| **TestWare** *(self-developed)* | Requirements analysis → test case derivation from PRD |
+| **Antigravity (Claude Sonnet)** | Primary code generation: test specs, utilities, documentation |
+| **GitHub Copilot** | Inline autocomplete during utility development |
+| **ChatGPT (GPT-4.5)** | PRD generation and requirement decomposition |
+
+**Key correction:** AI generated synchronous assertions (`expect().toHaveText()`) for checkout totals. These were replaced with `expect.poll()` to handle async recalculation — eliminating an entire class of timing-based flakiness. Full details in [`short-response-answers.md`](./short-response-answers.md).
 
 ---
 
@@ -127,11 +135,11 @@ Short-response answers: [`short-response-answers.md`](./short-response-answers.m
 
 | Decision | Rationale |
 |----------|-----------|
-| No real checkout UI implemented | A mock HTML shell would add no signal — the test value is in API contract validation and discount logic |
-| No page object model abstraction | Overkill for 14 tests across 3 files. Locators are `data-testid`-based and readable inline |
-| Serial test execution | Avoids mock route state pollution. Speed tradeoff is acceptable at this test count |
+| No real checkout UI implemented | A mock HTML shell validates DOM binding — the test value is in API contract and discount logic, not visual fidelity |
+| No page object model abstraction | YAGNI at 18 tests across 3 files. `data-testid` locators are readable inline. Would introduce POM at ~30+ tests |
+| Serial test execution | Avoids mock route state pollution. Speed tradeoff is negligible at this test count |
 | Mocked admin config | Validates config-driven behavior without building admin infrastructure |
-| Unit tests co-located in `edge-cases.spec.ts` | Keeps the "discount logic unit test" concern near its integration tests. Would split into `utils/__tests__/` in a production repo |
+| Unit tests co-located in `edge-cases.spec.ts` | Keeps discount logic unit tests near their integration counterparts. Would split into `utils/__tests__/` in a production repo |
 
 ---
 
